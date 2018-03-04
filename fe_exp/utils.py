@@ -4,11 +4,15 @@ import sys
 
 from sklearn import preprocessing
 from sklearn.model_selection import KFold
-from sklearn.model_selection import StratifiedKFold
-from sklearn.linear_model import LogisticRegression
-from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import mutual_info_classif
 from sklearn.feature_selection import SelectKBest
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import ExtraTreesClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import accuracy_score
+from sklearn.metrics import classification_report
+from sklearn.metrics import precision_recall_fscore_support
 
 import numpy as np
 import pandas as pd
@@ -96,7 +100,7 @@ class Classifier(object):
         elif method == 'svm':
             pass
         elif method == 'knn':
-            pass
+            knnclassifier()
         else:
             sys.exit('method not fount!')
 
@@ -107,5 +111,40 @@ class Classifier(object):
         pass
 
     def knnclassifier(self):
-        
+        data = self.data
+        labels = self.labels
+        kf_data, test_data, kf_labels, test_labels = train_test_split(data, labels, test_size = 0.25, random_state = 0)
+        kf = KFold(n_splits = 5, shuffle = False, random_state = 0)
+        models = []
+        preformance = []
+        for kf_train_index, kf_test_index in kf.split(kf_data):
+            kf_train_data, kf_test_data = kf_data[kf_train_index], kf_data[kf_test_index]
+            kf_train_labels, kf_test_labels = kf_labels[kf_train_index], kf_labels[kf_test_index]
+            knn = KNeighborsClassifier(n_neighbors = 3)
+            knn.fit(kf_train_data, kf_train_labels)
+            pred_labels = knn.predict(kf_test_data)
+            acc = accuracy_score(kf_test_labels, pred_labels)
+            models.append(knn)
+            performance.append(acc)
+
+        top3_indices = np.argsort(-np.array(performance)).ravel()[:3]
+        preds = []
+        for model in [models[i] for i in top3_indices]:
+            cur_pred = model.predict(test_data)
+            preds.append(cur_pred)
+
+        pred = vote(preds)
+        report(test_labels, pred)
+
+    def vote(self, preds):
+        pred = np.sum(np.vstack((preds[0], preds[1], preds[2])), axis = 0)
+        pred[pred >= 0] = 1
+        pred[pred < 0] = -1
+        return pred
+    
+    def report(self, labels, pred):
+        acc = accuracy_score(labels, pred)
+        prfs = classification_report(labels, pred)
+        print 'accuracy: {0:.4f}'.format(acc)
+        print prfs
 
