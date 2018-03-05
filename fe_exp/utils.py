@@ -1,6 +1,7 @@
 #conding=utf-8
 
 import sys
+import numpy as np
 
 from sklearn import preprocessing
 from sklearn.model_selection import KFold
@@ -14,12 +15,15 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_fscore_support
 
-import numpy as np
+
+import warnings
+import sklearn.exceptions
+#ignore 0 precision or recall warnings
+warnings.filterwarnings('ignore', category = sklearn.exceptions.UndefinedMetricWarning)
 
 def load_data(datapath, labelpath):
     data = np.loadtxt(open(datapath, 'rb'))
     labels = np.loadtxt(open(labelpath, 'rb'))
-    print "raw dimension: {0}".format(data.shape)
     return data, labels
 
 class PreProcessing(object):
@@ -39,7 +43,6 @@ class FeatureSelection(object):
         self.labels = labels
         self.method = method
         self.target_feature = int(data.shape[1] * ratio)
-        self.excute()
 
     def excute(self):
         method = self.method
@@ -115,7 +118,6 @@ class Classifier(object):
         self.kf_labels = kf_labels
         self.test_labels = test_labels
         self.method = method
-        self.excute()
 
     def excute(self):
         method = self.method
@@ -170,5 +172,5 @@ class Classifier(object):
     def report(self, labels, pred):
         acc = accuracy_score(labels, pred)
         prfs = classification_report(labels, pred)
-        print 'accuracy: {0:.4f}'.format(acc)
+        print 'acc: {0:.4f}'.format(acc)
         print prfs

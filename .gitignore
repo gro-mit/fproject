@@ -1,0 +1,8 @@
+#ignore file
+data
+
+#python
+*.py[cod]
+
+#vim
+*.swp
