@@ -15,12 +15,11 @@ from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_fscore_support
 
 import numpy as np
-import pandas as pd
 
 def load_data(datapath, labelpath):
     data = np.loadtxt(open(datapath, 'rb'))
     labels = np.loadtxt(open(labelpath, 'rb'))
-    print "dimension: {0}".format(data.shape)
+    print "raw dimension: {0}".format(data.shape)
     return data, labels
 
 class PreProcessing(object):
@@ -35,72 +34,97 @@ class PreProcessing(object):
         return preprocessing.scale(self.data)
 
 class FeatureSelection(object):
-    def __init__(self, method = 'l1', ratio = 0.1, data, labels):
+    def __init__(self, method, ratio, data, labels):
         self.data = data
         self.labels = labels
+        self.method = method
         self.target_feature = int(data.shape[1] * ratio)
-        self.excute(method)
+        self.excute()
 
-    def excute(self, method):
-        if method == 'l1':
-            l1based()
+    def excute(self):
+        method = self.method
+        if method == 'base':
+            return self.base_line()
+        elif method == 'l1':
+            return self.l1based()
         elif method == 'l2':
-            l2based
+            return self.l2based()
         elif method == 'tree':
-            treebased()
+            return self.treebased()
         elif method == 'MI':
-            MIbased()
+            return self.MIbased()
         elif method == 'deep':
             pass
         else:
             sys.exit('fs method not found!')
 
+    def base_line(self):
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
+        return kf_data, test_data, kf_labels, test_labels
+
     def l1based(self):
         n_target = self.target_feature
-        lr = LogisticRegression(C = 1, penalty = 'l1', tol = 0.1).fit(self.data, self.labels)
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
+        lr = LogisticRegression(C = 1, penalty = 'l1', tol = 0.1).fit(kf_data, kf_labels)
         coef = lr.coef_
         top_indices = np.argsort(-coef)[:,:n_target].ravel()
-        data_new = data[:,top_indices]
-        return data_new
+        kf_data_new = kf_data[:,top_indices]
+        test_data_new = test_data[:,top_indices]
+        return kf_data_new, test_data_new, kf_labels, test_labels
 
     def l2based(self):
         n_target = self.target_feature
-        lr = LogisticRegression(C = 1, penalty = 'l2', tol = 0.1).fit(self.data, self.labels)
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
+        lr = LogisticRegression(C = 1, penalty = 'l2', tol = 0.1).fit(kf_data, kf_labels)
         coef = lr.coef_
         top_indices = np.argsort(-coef)[:,:n_target].ravel()
-        data_new = data[:,top_indices]
-        return data_new
+        kf_data_new = kf_data[:,top_indices]
+        test_data_new = test_data[:,top_indices]
+        return kf_data_new, test_data_new, kf_labels, test_labels
 
     def treebased(self):
         n_target = self.target_feature
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
         forest = ExtraTreesClassifier(n_estimators = 250, random_state = 0)
-        forest.fit(self.data, self.labels)
+        forest.fit(kf_data, kf_labels)
         importances = forest.feature_importances_
         top_indices = np.argsort(-importances)[:n_target].ravel()
-        data_new = data[:,top_indices]
-        return data_new
+        kf_data_new = kf_data[:,top_indices]
+        test_data_new = test_data[:,top_indices]
+        return kf_data_new, test_data_new, kf_labels, test_labels
 
     def MIbased(self):
         n_target = self.target_feature
-        data_new = SelectKBest(mutual_info_classif, k = n_target).fit_transform(self.data, self.labels)
-        return data_new
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
+        mi_select = SelectKBest(mutual_info_classif, k = n_target)
+        kf_data_new = mi_select.fit_transform(kf_data, kf_labels)
+        test_data_new = mi_select.transform(test_data)
+        return kf_data_new, test_data_new, kf_labels, test_labels
     
     def deepbased(self):
         pass
 
-class Classifier(object):
-    def __init__(self, method = 'knn', data, labels):
-        self.data = data
-        self.labels = labels
-        self.excute(method)
+    def split_data(self):
+        kf_data, test_data, kf_labels, test_labels = train_test_split(self.data, self.labels, test_size = 0.25, random_state = 0)
+        return kf_data, test_data, kf_labels, test_labels
 
-    def excute(self, method):
+class Classifier(object):
+    def __init__(self, method, kf_data, test_data, kf_labels, test_labels):
+        self.kf_data = kf_data
+        self.test_data = test_data
+        self.kf_labels = kf_labels
+        self.test_labels = test_labels
+        self.method = method
+        self.excute()
+
+    def excute(self):
+        method = self.method
         if method == 'lr':
             pass
         elif method == 'svm':
             pass
         elif method == 'knn':
-            knnclassifier()
+            self.knnclassifier()
         else:
             sys.exit('method not fount!')
 
@@ -111,12 +135,13 @@ class Classifier(object):
         pass
 
     def knnclassifier(self):
-        data = self.data
-        labels = self.labels
-        kf_data, test_data, kf_labels, test_labels = train_test_split(data, labels, test_size = 0.25, random_state = 0)
+        kf_data = self.kf_data
+        test_data = self.test_data
+        kf_labels = self.kf_labels
+        test_labels = self.test_labels
         kf = KFold(n_splits = 5, shuffle = False, random_state = 0)
         models = []
-        preformance = []
+        performance = []
         for kf_train_index, kf_test_index in kf.split(kf_data):
             kf_train_data, kf_test_data = kf_data[kf_train_index], kf_data[kf_test_index]
             kf_train_labels, kf_test_labels = kf_labels[kf_train_index], kf_labels[kf_test_index]
@@ -133,8 +158,8 @@ class Classifier(object):
             cur_pred = model.predict(test_data)
             preds.append(cur_pred)
 
-        pred = vote(preds)
-        report(test_labels, pred)
+        pred = self.vote(preds)
+        self.report(test_labels, pred)
 
     def vote(self, preds):
         pred = np.sum(np.vstack((preds[0], preds[1], preds[2])), axis = 0)
@@ -147,4 +172,3 @@ class Classifier(object):
         prfs = classification_report(labels, pred)
         print 'accuracy: {0:.4f}'.format(acc)
         print prfs
-
