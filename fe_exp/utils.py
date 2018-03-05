@@ -126,7 +126,7 @@ class Classifier(object):
         elif method == 'svm':
             pass
         elif method == 'knn':
-            self.knnclassifier()
+            return self.knnclassifier()
         else:
             sys.exit('method not fount!')
 
@@ -161,7 +161,8 @@ class Classifier(object):
             preds.append(cur_pred)
 
         pred = self.vote(preds)
-        self.report(test_labels, pred)
+        acc, rpt = self.report(test_labels, pred)
+        return acc, rpt
 
     def vote(self, preds):
         pred = np.sum(np.vstack((preds[0], preds[1], preds[2])), axis = 0)
@@ -172,5 +173,7 @@ class Classifier(object):
     def report(self, labels, pred):
         acc = accuracy_score(labels, pred)
         prfs = classification_report(labels, pred)
+        rpt = np.array(precision_recall_fscore_support(labels, pred)).T
         print 'acc: {0:.4f}'.format(acc)
         print prfs
+        return acc, rpt
