@@ -7,6 +7,7 @@ from sklearn import preprocessing
 from sklearn.model_selection import KFold
 from sklearn.model_selection import train_test_split
 from sklearn.feature_selection import mutual_info_classif
+from sklearn.feature_selection import f_classif
 from sklearn.feature_selection import SelectKBest
 from sklearn.linear_model import LogisticRegression
 from sklearn.ensemble import ExtraTreesClassifier
@@ -38,11 +39,12 @@ class PreProcessing(object):
         return preprocessing.scale(self.data)
 
 class FeatureSelection(object):
-    def __init__(self, method, ratio, data, labels):
+    def __init__(self, method, ratio, random_state, data, labels):
         self.data = data
         self.labels = labels
         self.method = method
         self.target_feature = int(data.shape[1] * ratio)
+        self.random_state = random_state
 
     def excute(self):
         method = self.method
@@ -56,6 +58,8 @@ class FeatureSelection(object):
             return self.treebased()
         elif method == 'MI':
             return self.MIbased()
+        elif method == 'ftest':
+            return self.fclassifbased()
         elif method == 'deep':
             pass
         else:
@@ -88,7 +92,7 @@ class FeatureSelection(object):
     def treebased(self):
         n_target = self.target_feature
         kf_data, test_data, kf_labels, test_labels = self.split_data()
-        forest = ExtraTreesClassifier(n_estimators = 250, random_state = 0)
+        forest = ExtraTreesClassifier(n_estimators = 250)
         forest.fit(kf_data, kf_labels)
         importances = forest.feature_importances_
         top_indices = np.argsort(-importances)[:n_target].ravel()
@@ -104,11 +108,19 @@ class FeatureSelection(object):
         test_data_new = mi_select.transform(test_data)
         return kf_data_new, test_data_new, kf_labels, test_labels
     
+    def fclassifbased(self):
+        n_target = self.target_feature
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
+        mi_select = SelectKBest(f_classif, k = n_target)
+        kf_data_new = mi_select.fit_transform(kf_data, kf_labels)
+        test_data_new = mi_select.transform(test_data)
+        return kf_data_new, test_data_new, kf_labels, test_labels
+
     def deepbased(self):
         pass
 
     def split_data(self):
-        kf_data, test_data, kf_labels, test_labels = train_test_split(self.data, self.labels, test_size = 0.25, random_state = 0)
+        kf_data, test_data, kf_labels, test_labels = train_test_split(self.data, self.labels, test_size = 0.25, random_state = self.random_state)
         return kf_data, test_data, kf_labels, test_labels
 
 class Classifier(object):
@@ -141,7 +153,7 @@ class Classifier(object):
         test_data = self.test_data
         kf_labels = self.kf_labels
         test_labels = self.test_labels
-        kf = KFold(n_splits = 5, shuffle = False, random_state = 0)
+        kf = KFold(n_splits = 5, shuffle = False)
         models = []
         performance = []
         for kf_train_index, kf_test_index in kf.split(kf_data):
