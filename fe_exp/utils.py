@@ -16,6 +16,7 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_fscore_support
 
+from dfs import DeepFeaturnSelection
 
 import warnings
 import sklearn.exceptions
@@ -61,7 +62,7 @@ class FeatureSelection(object):
         elif method == 'ftest':
             return self.fclassifbased()
         elif method == 'deep':
-            pass
+            return self.deepbased()
         else:
             sys.exit('fs method not found!')
 
@@ -117,7 +118,16 @@ class FeatureSelection(object):
         return kf_data_new, test_data_new, kf_labels, test_labels
 
     def deepbased(self):
-        pass
+        n_target = self.target_feature
+        kf_data, test_data, kf_labels, test_labels = self.split_data()
+        dfs = DeepFeaturnSelection(learning_rate = 0.01, batch_size = 50,\
+                n_epochs = 10)
+        dfs.fit(kf_data, kf_labels)
+        importances = dfs.importances_
+        top_indices = np.argsort(-importances)[:, :n_target].ravel()
+        kf_data_new = kf_data[:, top_indices]
+        test_data_new = test_data[:, top_indices]
+        return kf_data_new, test_data_new, kf_labels, test_labels
 
     def split_data(self):
         kf_data, test_data, kf_labels, test_labels = train_test_split(self.data, self.labels, test_size = 0.25, random_state = self.random_state)

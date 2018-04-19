@@ -15,8 +15,9 @@ def work_flow(res_name, data, labels, ratio):
     print 'raw    dimension: {0}'.format(data.shape)
     print 'target dimension: ({0}, {1})'.format(data.shape[0], int(data.shape[1] * ratio))
     
-    fs_method = ['base', 'l1', 'l2', 'tree', 'MI', 'ftest']
-#    fs_method = ['base', 'tree']
+#    fs_method = ['base', 'l1', 'l2', 'tree', 'MI', 'ftest']
+    fs_method = ['base', 'deep']
+#    fs_method = ['deep']
     clf_method = 'knn'
     repeat_times = 10 
 
@@ -67,7 +68,7 @@ if __name__ == '__main__':
     ratio = float(sys.argv[1])
     print dataset_name
     print ratio
-    res_name = './result/' + time.strftime('%m%d%H', time.localtime()) + dataset_name + sys.argv[1]
+    res_name = './result/' + time.strftime('%m%d%H%M', time.localtime()) + dataset_name + sys.argv[1]
     dataset_path = './data/' + dataset_name
     datapath = dataset_path + '.data'
     labelspath = dataset_path + '.labels'
