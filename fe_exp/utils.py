@@ -16,7 +16,20 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_fscore_support
 
-from dfs import DeepFeaturnSelection
+from sklearn.metrics import homogeneity_score
+from sklearn.metrics import completeness_score
+from sklearn.metrics import v_measure_score
+from sklearn.metrics import fowlkes_mallows_score
+from sklearn.metrics import adjusted_rand_score
+from sklearn.metrics import adjusted_mutual_info_score
+from sklearn.metrics import silhouette_score
+
+from sklearn import cluster
+
+import scipy.spatial
+import scipy.cluster
+
+#from dfs import DeepFeaturnSelection
 
 import warnings
 import sklearn.exceptions
@@ -199,3 +212,71 @@ class Classifier(object):
         print 'acc: {0:.4f}'.format(acc)
         print prfs
         return acc, rpt
+
+class Clustering(object):
+    def __init__(self, method, measure, n_clusters, data, labels):
+        self.method = method
+        self.measure = measure
+        self.n_clusters = n_clusters
+        self.data = data
+        labels[labels < 0] = 0
+        self.labels = labels
+
+        self.excute()
+
+    def excute(self):
+        method = self.method
+        measure = self.measure
+
+        if method == 'hc':
+            return self.hc()
+        elif method == 'kmeans':
+            return self.kmeans()
+        elif method == 'kmeans++':
+            return self.kmeansplus()
+        elif method == 'minibatchkmeans':
+            return self.minibatchkmeans()
+        else:
+            sys.exit('method not fount!')
+
+    def hc(self):
+        #scipy measure: correlation euclidean mahalanobis cosine
+        measure = 'correlation' if self.measure == 'pearson' else self.measure
+        distMat = scipy.spatial.distance.pdist(self.data, measure)
+        hc = scipy.cluster.hierarchy.linkage(distMat, method = 'average')
+        clusters = scipy.cluster.hierarchy.fcluster(hc, self.n_clusters, criterion = 'maxclust')
+        pred = clusters - 1.0
+        return self.report(self.labels, pred), pred
+
+    def kmeans(self):
+        kmeans_cluster = cluster.KMeans(n_clusters = self.n_clusters, init = 'random')
+        kmeans_cluster.fit(self.data)
+
+        return self.report(self.labels, kmeans_cluster.labels_), kmeans_cluster.labels_
+
+    def kmeansplus(self):
+        kmeans_cluster = cluster.KMeans(n_clusters = self.n_clusters, init = 'k-means++')
+        kmeans_cluster.fit(self.data)
+
+        return self.report(self.labels, kmeans_cluster.labels_), kmeans_cluster.labels_
+
+    def minibatchkmeans(self):
+        minibatch_kmeans = cluster.MiniBatchKMeans(n_clusters = self.n_clusters, init = 'k-means++', batch_size = 50)
+        minibatch_kmeans.fit(self.data)
+        #print minibatch_kmeans.labels_
+        #print self.labels
+
+        return self.report(self.labels, minibatch_kmeans.labels_), minibatch_kmeans.labels_
+
+    def report(self, labels, pred):
+        homogeneity = homogeneity_score(labels, pred)
+        completeness = completeness_score(labels, pred)
+        v_measure = v_measure_score(labels, pred)
+        fowlkes_mallows = fowlkes_mallows_score(labels, pred)
+        adjusted_rand = adjusted_rand_score(labels, pred)
+        adjusted_mutual = adjusted_mutual_info_score(labels, pred)
+
+        #rpt = '%.3f\t%.3f\t%.3f\t%.3f\t%.3f\t%.3f'.format(homogeneity, completeness, v_measure, fowlkes_mallows, adjusted_rand, adjusted_mutual)
+        
+        rpt = [homogeneity, completeness, v_measure, fowlkes_mallows, adjusted_rand, adjusted_mutual]
+        return rpt
