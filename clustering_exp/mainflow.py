@@ -23,7 +23,7 @@ def work_flow(res_name, data, labels, ratio):
     labels = np.hstack([kf_labels, test_labels])
     cluster_method = ['kmeans', 'kmeans++', 'minibatchkmeans']
     measure = ['pearson', 'euclidean', 'cosine']
-    repeat_times = 10 
+    repeat_times = 10
 
     for measure_name in measure:
         print '---------------------------------------------------{0}'.format(measure_name)
@@ -53,17 +53,24 @@ def work_flow(res_name, data, labels, ratio):
             f.write(single_res)
 
 
+    kmpp_pred = []
+    mbkm_pred = []
     for cluster_name in cluster_method:
         print '---------------------------------------------------{0}'.format(cluster_name)
         runtime_box = []
         clu_report = []
+
         for i in range(repeat_times):
             start_time = time.clock()
             clu = Clustering(method = cluster_name, measure = None, n_clusters = 2, data = data, labels = labels)
-            res, _ = clu.excute()
+            res, tmp_pred = clu.excute()
             clu_runtime = time.clock() - start_time
             runtime_box.append(clu_runtime)
             clu_report.append(res)
+            if cluster_name == 'kmeans++':
+                kmpp_pred.append(tmp_pred)
+            elif cluster_name == 'minibatchkmeans':
+                mbkm_pred.append(tmp_pred)
 
         clu_report = np.array(clu_report)
         mean_report = np.mean(clu_report, axis = 0)
@@ -79,6 +86,15 @@ def work_flow(res_name, data, labels, ratio):
         single_res = 'km\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'.format(cluster_name, mean_runtime, mean_report[0], mean_report[1], mean_report[2], mean_report[3], mean_report[4], mean_report[5])
         with open(res_name, 'a+') as f:
             f.write(single_res)
+
+    kmpp_pred = np.array(kmpp_pred)
+    mbkm_pred = np.array(mbkm_pred)
+    difference = kmpp_pred + mbkm_pred
+    diff_index = [min(np.argwhere(difference[i] == 1).size, int(data.shape[0]-np.argwhere(difference[i] == 1).size))  for i in range(repeat_times)]
+    print diff_index
+    with open(res_name, 'a+') as f:
+        f.write('\n')
+        f.write('{0}\n'.format(diff_index))
 
 if __name__ == '__main__':
     dataset_name = sys.argv[1]
