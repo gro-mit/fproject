@@ -101,7 +101,7 @@ if __name__ == '__main__':
     ratio = float(sys.argv[2])
     print dataset_name
     print ratio
-    res_name = './result/' + time.strftime('%m%d%H%M', time.localtime()) + dataset_name + sys.argv[1]
+    res_name = './result/' + time.strftime('%m%d%H%M', time.localtime()) + dataset_name + sys.argv[2]
     dataset_path = './data/' + dataset_name
     datapath = dataset_path + '.data'
     labelspath = dataset_path + '.labels'

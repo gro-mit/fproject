@@ -125,9 +125,9 @@ class FeatureSelection(object):
     def fclassifbased(self):
         n_target = self.target_feature
         kf_data, test_data, kf_labels, test_labels = self.split_data()
-        mi_select = SelectKBest(f_classif, k = n_target)
-        kf_data_new = mi_select.fit_transform(kf_data, kf_labels)
-        test_data_new = mi_select.transform(test_data)
+        ftest_select = SelectKBest(f_classif, k = n_target)
+        kf_data_new = ftest_select.fit_transform(kf_data, kf_labels)
+        test_data_new = ftest_select.transform(test_data)
         return kf_data_new, test_data_new, kf_labels, test_labels
 
     def deepbased(self):
