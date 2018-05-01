@@ -23,6 +23,7 @@ from sklearn.metrics import fowlkes_mallows_score
 from sklearn.metrics import adjusted_rand_score
 from sklearn.metrics import adjusted_mutual_info_score
 from sklearn.metrics import silhouette_score
+from sklearn.metrics import calinski_harabaz_score
 
 from sklearn import cluster
 
