@@ -48,7 +48,7 @@ def work_flow(res_name, data, labels, ratio):
         print '*******************************************'
         print 
 
-        single_res = 'hc\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'.format(measure_name, mean_runtime, mean_report[0], mean_report[1], mean_report[2], mean_report[3], mean_report[4], mean_report[5])
+        single_res = 'hc {0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'.format(measure_name, mean_runtime, mean_report[0], mean_report[1], mean_report[2], mean_report[3], mean_report[4], mean_report[5])
         with open(res_name, 'a+') as f:
             f.write(single_res)
 
@@ -83,7 +83,7 @@ def work_flow(res_name, data, labels, ratio):
         print '*******************************************'
         print 
 
-        single_res = 'km\t{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'.format(cluster_name, mean_runtime, mean_report[0], mean_report[1], mean_report[2], mean_report[3], mean_report[4], mean_report[5])
+        single_res = '{0}\t{1}\t{2}\t{3}\t{4}\t{5}\t{6}\t{7}\n'.format(cluster_name, mean_runtime, mean_report[0], mean_report[1], mean_report[2], mean_report[3], mean_report[4], mean_report[5])
         with open(res_name, 'a+') as f:
             f.write(single_res)
 
@@ -91,6 +91,7 @@ def work_flow(res_name, data, labels, ratio):
     mbkm_pred = np.array(mbkm_pred)
     difference = kmpp_pred + mbkm_pred
     diff_index = [min(np.argwhere(difference[i] == 1).size, int(data.shape[0]-np.argwhere(difference[i] == 1).size))  for i in range(repeat_times)]
+    diff_index = '\t'.join(str(item) for item in diff_index)
     print diff_index
     with open(res_name, 'a+') as f:
         f.write('\n')

@@ -16,6 +16,10 @@ from sklearn.metrics import accuracy_score
 from sklearn.metrics import classification_report
 from sklearn.metrics import precision_recall_fscore_support
 
+from sklearn import decomposition
+from sklearn import random_projection
+from sklearn import manifold
+
 from sklearn.metrics import homogeneity_score
 from sklearn.metrics import completeness_score
 from sklearn.metrics import v_measure_score
@@ -146,6 +150,76 @@ class FeatureSelection(object):
     def split_data(self):
         kf_data, test_data, kf_labels, test_labels = train_test_split(self.data, self.labels, test_size = 0.25, random_state = self.random_state)
         return kf_data, test_data, kf_labels, test_labels
+
+class Dimensionality_reduction(object):
+    def __init__(self, method, ratio, kf_data, test_data, kf_labels, test_labels):
+        self.method = method
+        self.ratio = ratio
+        self.kf_data = kf_data
+        self.test_data = test_data
+        self.kf_labels = kf_labels
+        self.test_labels = test_labels
+        self.n_target = int(kf_data.shape[1] * ratio)
+
+    def excute(self):
+        method = self.method
+        if method == 'base' or self.ratio == 1:
+            return self.base_line()
+        elif method == 'pca':
+            return self.pca()
+        elif method == 'rp':
+            return self.rp()
+        elif method == 'mds':
+            return self.mds()
+        else:
+            sys.exit('dr method not found!')
+
+    def base_line(self):
+        return self.kf_data, self.test_data, self.kf_labels, self.test_labels
+
+    def pca(self):
+        n_target = self.n_target
+        if n_target >= self.kf_data.shape[1]:
+            return self.kf_data, self.test_data, self.kf_labels, self.test_labels
+        if n_target > self.kf_data.shape[0]:
+            n_target = int((self.kf_data.shape[0] + self.test_data.shape[0]) * (0.25 + self.ratio))
+        pca = decomposition.PCA(n_components = n_target)
+        high_data = np.concatenate((self.kf_data, self.test_data), 0) if self.test_data.any() else self.kf_data
+        low_data = pca.fit(high_data).transform(high_data)
+        kf_data_new = low_data[0:self.kf_data.shape[0]]
+        if self.test_data.any():
+            test_data_new = low_data[self.kf_data.shape[0]:(self.kf_data.shape[0] + self.test_data.shape[0])]
+
+        return kf_data_new, test_data_new, self.kf_labels, self.test_labels
+            
+    def rp(self):
+        n_target = self.n_target
+        if n_target >= self.kf_data.shape[1]:
+            return self.kf_data, self.test_data, self.kf_labels, self.test_labels
+        rp = random_projection.SparseRandomProjection(n_components = n_target)
+        high_data = np.concatenate((self.kf_data, self.test_data), 0) if self.test_data.any() else self.kf_data
+        low_data = rp.fit_transform(high_data)
+        kf_data_new = low_data[0:self.kf_data.shape[0]]
+        if self.test_data.any():
+            test_data_new = low_data[self.kf_data.shape[0]:(self.kf_data.shape[0] + self.test_data.shape[0])]
+
+        return kf_data_new, test_data_new, self.kf_labels, self.test_labels
+
+    def mds(self):
+        n_target = self.n_target
+        n_init = 3
+        max_iter = 300
+        if n_target >= self.kf_data.shape[1]:
+            return self.kf_data, self.test_data, self.kf_labels, self.test_labels
+
+        high_data = np.concatenate((self.kf_data, self.test_data), axis = 0) if self.test_data.any() else self.kf_data
+        low_data = manifold.MDS(n_components = n_target, max_iter = max_iter, n_init = n_init).fit_transform(high_data)
+        kf_data_new = low_data[0:self.kf_data.shape[0]]
+        if self.test_data.any():
+            test_data_new = low_data[self.kf_data.shape[0]:(self.kf_data.shape[0] + self.test_data.shape[0])]
+        
+        return kf_data_new, test_data_new, self.kf_labels, self.test_labels
+
 
 class Classifier(object):
     def __init__(self, method, kf_data, test_data, kf_labels, test_labels):

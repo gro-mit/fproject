@@ -1,9 +1,14 @@
 #ignore file
 data
-result
+elbow_pic
 
 #python
 *.py[cod]
 
 #vim
 *.swp
+
+#k_exp
+*.RData
+*.Rhistory
+
