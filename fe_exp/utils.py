@@ -19,6 +19,7 @@ from sklearn.metrics import precision_recall_fscore_support
 from sklearn import decomposition
 from sklearn import random_projection
 from sklearn import manifold
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 
 from sklearn.metrics import homogeneity_score
 from sklearn.metrics import completeness_score
